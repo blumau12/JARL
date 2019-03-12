@@ -125,18 +125,8 @@ refresh_rate = 200  # ms
 
 
 Map(maps, 'alle Werke', '#CAE8FF')
-Map(maps, 'Gesundheit', '#CAFFCB')
-Map(maps, 'Gaming', '#EDCAFF')
 
 
 maps[0].new_quest('mobile', 3, dt.timedelta(hours=12), 0)
-maps[0].new_quest('de Frank', 3, dt.timedelta(hours=8), 0)
 maps[0].new_quest('neuronale Netze', 1, dt.timedelta(days=3), 0)
-maps[0].new_quest('Blinddruck', 1, dt.timedelta(days=1), 0)
-
-maps[1].new_quest('Zähne', 3, dt.timedelta(hours=12), 0)
-maps[1].new_quest('leichte Last', 1, dt.timedelta(days=1), 0)
-
-maps[2].new_quest('osu', 2, dt.timedelta(days=1), 0)
-maps[2].new_quest('neuer Champ', 1, dt.timedelta(days=4), 0)
 
