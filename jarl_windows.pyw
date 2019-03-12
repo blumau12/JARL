@@ -559,7 +559,7 @@ def start():
 
     def_blue()
 
-    # maps = jc.maps
+    maps = jc.maps
     eval(['open_progress()', 'refresh_maps_bar()'][0])
 
     set_map(0)
