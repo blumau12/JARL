@@ -144,17 +144,17 @@ def remove_quest(name):
 
 if __name__ == '__main__':
     # загружаем данные прошлых сессий
-    load_progress('HerrKarlKiller')
+    load_progress('hakerok_igorek')
 
     # создаем новый квест
-    add_quest(
-        name='english',
-        points={'Minuten': {'norm': 60, 'type': 'minutes'}},
-        instruction='just read the book',
-        color='#00FF22')
+    # add_quest(
+    #     name='hack_americans',
+    #     points={'Minuten': {'norm': 15, 'type': 'minutes'}},
+    #     instruction='just bruteforce penta(gon)',
+    #     color='#fc0fc0')
 
     # позже редактируем этот квест, если нужно
-    edit_quest(name='english', instruction='chill and read', color=None)
+    # edit_quest(name='english', instruction='chill and read', color=None)
 
     # перед работой пересчитываем недостающие очки квеста на данный момент
     update_points_to_do()
@@ -163,13 +163,13 @@ if __name__ == '__main__':
     update_recommended()
 
     # начинаем выполнение квеста
-    start_work(name='english', time=datetime.today() - Timedelta(1, 'm'))
+    start_work(name='hack_americans', time=datetime.today() - Timedelta(1, 'm'))
 
     # заканчиваем выполнение квеста
     log_work(
-        name='english',
+        name='hack_americans',
         time=datetime.today(),
-        points={'Minuten': 1},
+        points={'Minuten': 15},
         bookmark='this time was an easiest; the key is to make a coffee')
 
     # после работы пересчитываем недостающие очки квеста на данный момент
@@ -182,6 +182,6 @@ if __name__ == '__main__':
     # remove_quest(name='english')
 
     # сохраняем прогресс в базу
-    save_progress('HerrKarlKiller')
+    save_progress('hakerok_igorek')
 
     pass
