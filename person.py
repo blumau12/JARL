@@ -132,7 +132,7 @@ class Person:
 
 if __name__ == '__main__':
 
-    person = Person('hakerok_igorek', 'hackgmail@.com')
+    person = Person('hakerok_igorek', 'hack@gmail.com')
     # загружаем данные прошлых сессий
     person.load_progress('hakerok_igorek')
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         color='#fc0fc0')
 
     # позже редактируем этот квест, если нужно
-    person.edit_quest(name='english', instruction='chill and read', color=None)
+    # person.edit_quest(name='english', instruction='chill and read', color=None)
 
     # перед работой пересчитываем недостающие очки квеста на данный момент
     person.update_points_to_do()
@@ -153,14 +153,14 @@ if __name__ == '__main__':
     person.update_recommended()
 
     # начинаем выполнение квеста
-    person.start_work(name='hack_americans', time=datetime.today() - Timedelta(1, 'm'))
+    person.start_work(name='hack_americans', time=datetime.today() - Timedelta(15, 'm'))
 
     # заканчиваем выполнение квеста
     person.log_work(
         name='hack_americans',
         time=datetime.today(),
         points={'Minuten': 15},
-        bookmark='this time was an easiest; the key is to make a coffee')
+        bookmark='this time was the easiest; the key is to make a coffee')
 
     # после работы пересчитываем недостающие очки квеста на данный момент
     person.update_points_to_do()
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     person.update_recommended()
 
     # при необходимости удаляем квест
-    person.remove_quest(name='english')
+    # person.remove_quest(name='english')
 
     # сохраняем прогресс в базу
     person.save_progress('hakerok_igorek')
