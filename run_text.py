@@ -181,12 +181,12 @@ class Session:
                             continue
                         break
                 elif typ == 'bool':
+                    text = f'Have you done {point_name}?\n'
                     prompt = OrderedDict((
                         ('y', 'yes'),
                         ('n', 'no'),
                     ))
                     prompt.update({'x': 'exit'})
-                    text = f'Have you done {point_name}?\n'
                     text += self.__construct_prompt(prompt)
                     self.__print(text)
                     i = self.__input(values=prompt)
@@ -258,13 +258,13 @@ class Session:
             quest = self.ps.quests[quest_name]
 
             instruction = None
+            text = f'Do you want to change this quest instruction?\n' \
+                   f'(current: {quest["instruction"]})\n'
             prompt = OrderedDict((
                 ('y', 'yes'),
                 ('n', 'no'),
             ))
             prompt.update({'x': 'exit'})
-            text = f'Do you want to change this quest instruction?\n' \
-                   f'(current: {quest["instruction"]})\n'
             text += self.__construct_prompt(prompt)
             self.__print(text)
             i = self.__input(values=prompt)
@@ -294,17 +294,14 @@ class Session:
                 return
             quest_name = quests_dict[i]
 
+            text = f'\nRemove quest {quest_name}. Are you sure?\n'
             prompt = OrderedDict((
                 ('y', 'yes'),
                 ('n', 'no'),
             ))
-            prompt.update({'x': 'exit'})
-            text = f'\nRemove quest {quest_name}. Are you sure?\n'
             text += self.__construct_prompt(prompt)
             self.__print(text)
             i = self.__input(values=prompt)
-            if i == 'x':
-                return
             if i == 'y':
                 self.ps.remove_quest(quest_name)
                 self.__print('Quest removed.\n')
@@ -433,12 +430,12 @@ class Session:
                     continue
                 break
 
+            text = '\n' \
+                   'Please choose type of the new point\n'
             prompt = OrderedDict((
                 ('1', 'numeric, integer'),
                 ('2', 'boolean, a fact of an action'),
             ))
-            text = '\n' \
-                   'Please choose type of the new point\n'
             text += self.__construct_prompt(prompt)
             self.__print(text)
             typ = self.__input(values=prompt)
@@ -447,12 +444,12 @@ class Session:
             elif typ == '2':
                 typ = 'bool'
 
+            text = f'\n' \
+                   f'Add point "{point_name}" [{typ}] with daily rate {norm}. Are you sure?\n'
             prompt = OrderedDict((
                 ('y', 'yes, add that point'),
                 ('n', 'no, skip that point'),
             ))
-            text = f'\n' \
-                   f'Add point "{point_name}" [{typ}] with daily rate {norm}. Are you sure?\n'
             text += self.__construct_prompt(prompt)
             self.__print(text)
             i = self.__input(values=prompt)
@@ -461,11 +458,11 @@ class Session:
                 text = 'Added that point.\n'
                 self.__print(text)
 
+            text = "\nWould you like to add another point?\n"
             prompt = OrderedDict((
                 ('y', 'yes'),
                 ('n', 'no'),
             ))
-            text = "\nWould you like to add another point?\n"
             text += self.__construct_prompt(prompt)
             self.__print(text)
             i = self.__input(values=prompt)
