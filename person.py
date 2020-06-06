@@ -1,7 +1,12 @@
-from pandas import DataFrame, Timedelta, datetime, MultiIndex
+from pandas import Timedelta, datetime
 from pickle import load, dump, HIGHEST_PROTOCOL
 from os import makedirs
 from os.path import isfile, join
+
+import config
+from exceptions import assert_person
+from time_lib import parse_timestamp
+from logs import Logs
 
 
 class Person:
@@ -10,50 +15,114 @@ class Person:
 
         self.player_name = player_name
         self.email = email
-        self.saves_folder = 'saves'  # run configuration variables
-        self.quests = {}  # script global variables. points types: minutes, boolean, number, list, entry
-        self.logs = DataFrame(columns=['name', 'points', 'bookmark'],
-                              index=MultiIndex(levels=[[], []], codes=[[], []]))
-        # index: (date, id)
+        self.saves_folder = config.SAVES_FOLDER
+        self.quests = {}
 
-    def load_progress(self, name):
+        self.save_bin_path = join(self.saves_folder, '{0}.bin'.format(self.player_name))
+        self.logs_path = join(self.saves_folder, '{0}.logs.db'.format(self.player_name))
+
+    # PUBLIC:
+
+    def load_progress(self):
+        if not self.profile_exists():
+            self.__save_progress()
+        else:
+            with open(self.save_bin_path, 'rb') as f:
+                self.quests = load(f)
+
+    def start_work(self, quest_name, timestamp=None):
+        timestamp = timestamp or parse_timestamp(datetime.today())
+        if isinstance(timestamp, str):
+            timestamp = parse_timestamp(timestamp)
+
+        self.__start_work(quest_name, timestamp)
+        self.__save_progress()
+
+    def log_work(self, quest_name, points, bookmark, timestamp=None):
+        timestamp = timestamp or parse_timestamp(datetime.today())
+        if isinstance(timestamp, str):
+            timestamp = parse_timestamp(timestamp)
+
+        self.__log_work(quest_name, timestamp, points, bookmark)
+        self.__save_progress()
+
+    def add_quest(self, quest_name, points, instruction, color=None):
+        self.__add_quest(quest_name, points, instruction, color=color)
+        self.__save_progress()
+
+    def edit_quest_meta(self, quest_name, instruction=None, color=None):
+        self.__edit_quest_meta(quest_name, instruction=instruction, color=color)
+        self.__save_progress()
+
+    def remove_quest(self, quest_name):
+        self.__remove_quest(quest_name)
+        self.__save_progress()
+
+    def profile_exists(self):
         makedirs(self.saves_folder, exist_ok=True)
-        file_path = join(self.saves_folder, '{0}.bin'.format(name))
-        if not isfile(file_path):
-            return False
-        with open(file_path, 'rb') as f:
-            self.quests = load(f)
-            self.logs = load(f)
+        return isfile(self.save_bin_path)
 
-    def save_progress(self, name):
-        file_path = join(self.saves_folder, '{0}.bin'.format(name))
-        for folder in self.saves_folder:
-            folder_path = join(*self.saves_folder[:self.saves_folder.index(folder) + 1])
-            makedirs(folder_path, exist_ok=True)
-        with open(file_path, 'wb') as f:
-            dump(self.quests, f, protocol=HIGHEST_PROTOCOL)
-            dump(self.logs, f, protocol=HIGHEST_PROTOCOL)
+    def show_quests(self):
+        self.__update_quests()
+        return self.quests
 
-    def add_quest(self, name, points, instruction, color):
+    # PRIVATE:
+
+    def __save_progress(self):
+        makedirs(self.saves_folder, exist_ok=True)
+        with open(self.save_bin_path, 'wb') as wb:
+            dump(self.quests, wb, protocol=HIGHEST_PROTOCOL)
+
+    def __add_quest(self, quest_name, points, instruction, color=None):
         """
-        :param name: 'name'
-        :param points: {'Minuten': {'norm': 60, 'type': 'minutes'}, }
+        Структура квестов:
+        quests = {
+            'quest_name': {                     # [str] видимое имя квеста
+                'start_timestamp': None,        # [Timestamp] время начала выполнения (если квест сейчас выполняется)
+                'first_date': None,             # [date] дата окончания первого выполнения квеста (если был выполнен)
+                'last_date': None,              # [date] дата окончания последнего выполнения квеста (если был выполнен)
+                'points': {                     # [dict] все подсчеты по выполнению квеста
+                    'point_name': {             # [str] видимое название этого подсчета
+                        'norm': 60,             # [int] норма очков в день по выполнению квеста
+                        'type': 'int',          # [str] тип подсчета (int, bool)
+                        'total_points': 0,      # [int] всего очков по этому квесту с самого начала
+                        'points_to_do': 0,      # [int] очки, которых не хватает по расчету прямо сейчас
+                        'recommended': 0}       # [int] рекомендуемое количество очков для выполнения прямо сейчас
+                    },
+                'instruction': 'instruction',   # [str] краткая инструкция, как начать выполнение
+                'color': color or '#000000',    # [str] цвет квеста (только для графического интерфейса)
+            }
+        }
+
+        :param quest_name: 'name'
+        :param points: {'Minuten': {'norm': 60, 'type': 'minutes'}, ...}
         :param instruction: 'how to start work easily'
         :param color: '#0099FF' hex RGB color
         """
-        if name in self.quests:
-            return False
-        self.quests.update({name: {'start_timestamp': None,
-                                   'first_date': None,
-                                   'last_date': None,
-                                   'points': points,
-                                   'instruction': instruction,
-                                   'color': color}})
-        for point in points:
-            self.quests[name]['points'][point].update({'total_points': 0, 'points_to_do': 0, 'recommended': 0})
-        return True
+        assert_person(quest_name not in self.quests,
+                      f'quest named {quest_name} already exists')
+        assert_person(points,
+                      'empty dict "points"')
+        assert_person(all(('norm' in v and 'type' in v and len(v) == 2 for v in points.values())),
+                      'incorrect points structure')
 
-    def update_points_to_do(self):
+        self.quests.update({
+            quest_name: {
+                'start_timestamp': None,
+                'first_date': None,
+                'last_date': None,
+                'points': points,
+                'instruction': instruction,
+                'color': color or '#000000',
+            }
+        })
+
+        for point in points:
+            point_obj = self.quests[quest_name]['points'][point]
+            point_obj.update({'total_points': 0, 'points_to_do': 0, 'recommended': 0})
+
+    def __update_quests(self):
+        # update points_to_do
         for name in self.quests:
             quest = self.quests[name]
             if quest['first_date'] is not None:
@@ -62,8 +131,7 @@ class Person:
                     point['points_to_do'] = (datetime.today().date() - quest['first_date'] + Timedelta('1 days')
                                              ).days * point['norm'] - point['total_points']
 
-    def update_recommended(self):
-        # update_points_to_do first
+        # update recommended
         for name in self.quests:
             quest = self.quests[name]
             if quest['first_date'] is None:
@@ -81,64 +149,101 @@ class Person:
                     else:
                         point['recommended'] = -point['points_to_do']
 
-    def edit_quest(self, name, instruction=None, color=None):
-        if name not in self.quests:
-            return False
+    def __edit_quest_meta(self, quest_name, instruction=None, color=None):
+        assert_person(quest_name in self.quests,
+                      f'quest named "{quest_name}" not found')
         if instruction is not None:
-            self.quests[name]['instruction'] = str(instruction)
+            self.quests[quest_name]['instruction'] = str(instruction)
         if color is not None:
-            self.quests[name]['color'] = str(color)
+            self.quests[quest_name]['color'] = str(color)
 
-    def start_work(self, name, time):
-        if name not in self.quests or self.quests[name]['start_timestamp'] is not None:
-            raise Exception('bad quest start')
-        self.quests[name]['start_timestamp'] = time
-        return True
+    def __start_work(self, quest_name, timestamp):
+        assert_person(quest_name in self.quests,
+                      f'quest named {quest_name} not found')
+        assert_person(self.quests[quest_name]['start_timestamp'] is None,
+                      f'quest named {quest_name} is already started')
 
-    def log_work(self, name, time, points, bookmark):
+        quest = self.quests[quest_name]
+
+        # проверить, что указанное время старта равно или позже последнего лога по этому квесту
+        logs_obj = Logs(self.logs_path)
+        logs = logs_obj.get_logs(select=['timestamp'],
+                                 where=f'quest_name="{quest_name}" AND action="log_work"')
+        if logs:
+            last_log_timestamp = logs[-1][0]
+            last_log_timestamp = parse_timestamp(last_log_timestamp)
+            assert_person(last_log_timestamp <= timestamp,
+                          f'the given start datetime ({timestamp})'
+                          f' is before a last log of the quest ({last_log_timestamp})')
+
+        quest['start_timestamp'] = timestamp
+
+        logs_obj.log(
+            timestamp=str(timestamp),
+            quest_name=quest_name,
+            action='start_work',
+            points={},
+            bookmark='')
+        logs_obj.close()
+
+    def __log_work(self, quest_name, timestamp, points, bookmark):
         """
-        :param name: 'name'
-        :param time: datetime.datetime object
+        :param quest_name: 'name'
+        :param timestamp: pandas.Timestamp object
         :param points: {'Minuten': 48, }
         :param bookmark: 'any text'
         """
-        if name not in self.quests:
-            return False
-        quest = self.quests[name]
+        assert_person(quest_name in self.quests,
+                      f'quest named {quest_name} not found')
+        assert_person(self.quests[quest_name]['start_timestamp'] is not None,
+                      f'quest named {quest_name} is not started')
+
+        quest = self.quests[quest_name]
+
+        assert_person(quest['start_timestamp'] <= timestamp,
+                      f'the given log timestamp ({timestamp})'
+                      f' is after a start timestamp of the quest ({quest["start_timestamp"]})')
+
         for point_name in points:
-            if point_name not in quest['points']:
-                return False
+            assert_person(point_name in quest['points'],
+                          f'point named {point_name} is not in quest {quest_name} points')
+
+        quest['bookmark'] = bookmark
         for point_name in points:
             point = quest['points'][point_name]
             point['total_points'] += points[point_name]
-        date = time.date()
-        quest['bookmark'] = bookmark
+
+        date = timestamp.date()
         if quest['first_date'] is None:
             quest['first_date'] = date
         quest['last_date'] = date
-        if not self.logs.empty:
-            next_index = max(self.logs.index.levels[0]) + 1
-        else:
-            next_index = 0
-        self.logs.loc[(next_index, date), self.logs.columns] = [str(name), str(points), str(bookmark)]
+
         quest['start_timestamp'] = None
 
-    def remove_quest(self, name):
-        if name not in self.quests:
-            return False
-        self.quests.pop(name)
-        return True
+        logs_obj = Logs(self.logs_path)
+        logs_obj.log(
+            timestamp=str(timestamp),
+            quest_name=quest_name,
+            action='log_work',
+            points=points,
+            bookmark=bookmark)
+        logs_obj.close()
+
+    def __remove_quest(self, quest_name):
+        assert_person(quest_name in self.quests,
+                      f'quest named {quest_name} not found')
+        self.quests.pop(quest_name)
 
 
 if __name__ == '__main__':
 
     person = Person('hakerok_igorek', 'hack@gmail.com')
-    # загружаем данные прошлых сессий
-    person.load_progress('hakerok_igorek')
+    # загружаем прогресс
+    person.__load_progress()
 
     # создаем новый квест
-    person.add_quest(
-        name='hack_americans',
+    person.__add_quest(
+        quest_name='hack_americans',
         points={'Minuten': {'norm': 15, 'type': 'minutes'}},
         instruction='just bruteforce penta(gon)',
         color='#fc0fc0')
@@ -147,31 +252,25 @@ if __name__ == '__main__':
     # person.edit_quest(name='english', instruction='chill and read', color=None)
 
     # перед работой пересчитываем недостающие очки квеста на данный момент
-    person.update_points_to_do()
-
-    # пересчитываем рекомендуемые объемы работы на данный момент
-    person.update_recommended()
+    # и рекомендуемые объемы работы на данный момент
+    person.__update_quests()
 
     # начинаем выполнение квеста
-    person.start_work(name='hack_americans', time=datetime.today() - Timedelta(15, 'm'))
+    person.__start_work(quest_name='hack_americans', timestamp=datetime.today() - Timedelta(15, 'm'))
 
     # заканчиваем выполнение квеста
-    person.log_work(
-        name='hack_americans',
-        time=datetime.today(),
+    person.__log_work(
+        quest_name='hack_americans',
+        timestamp=datetime.today(),
         points={'Minuten': 15},
         bookmark='this time was the easiest; the key is to make a coffee')
 
     # после работы пересчитываем недостающие очки квеста на данный момент
-    person.update_points_to_do()
-
-    # пересчитываем рекомендуемые объемы работы на данный момент
-    person.update_recommended()
+    # и рекомендуемые объемы работы на данный момент
+    person.__update_quests()
 
     # при необходимости удаляем квест
     # person.remove_quest(name='english')
 
-    # сохраняем прогресс в базу
-    person.save_progress('hakerok_igorek')
-
-    pass
+    # сохраняем прогресс
+    person.__save_progress()
