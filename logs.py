@@ -8,7 +8,7 @@ from exceptions import assert_person
 class Logs:
     LOG_STRUCTURE = {
         'timestamp': 'CHAR(32)',
-        'quest_name': 'CHAR(32)',
+        'quest_id': 'CHAR(12)',
         'action': 'CHAR(32)',
         'points': 'JSON',
         'bookmark': 'CHAR(256)',
@@ -60,13 +60,3 @@ class Logs:
 
     def close(self):
         self.cnx.close()
-
-
-if __name__ == '__main__':
-    from time_lib import timestamp
-
-    ts = timestamp('2020-01-01', '21:00')
-
-    lg = Logs('./logstemp.db')
-    lg.log(timestamp=ts, quest_name='quest_name', action='action', points={'Minuten': {}}, bookmark='bookmark')
-    lg.get_logs()

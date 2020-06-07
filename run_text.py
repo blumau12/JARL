@@ -1,5 +1,5 @@
 from person import Person
-from pandas import datetime
+from datetime import datetime
 from collections import OrderedDict
 
 import config
@@ -64,6 +64,7 @@ class Session:
                 ('5', 'edit quest meta'),
                 ('6', 'remove quest'),
             ))
+            prompt.update({'x': 'exit'})
             text += self.__construct_prompt(prompt)
             self.__print(text)
             i = self.__input(values=prompt)
@@ -211,7 +212,7 @@ class Session:
                     started_mark = "STARTED"
                     if quest["start_timestamp"].date() < datetime.today().date():
                         started_mark += f' {quest["start_timestamp"].date()}'
-                    started_mark += f' at {quest["start_timestamp"].time()}'
+                    started_mark += f' at {quest["start_timestamp"].time()} {quest["start_timestamp"].tzinfo}'
                 text += f' > {quest_name} [{started_mark}]:\n' \
                         f'   {quest["instruction"]}\n' \
                         f'   points:\n'
@@ -343,7 +344,7 @@ class Session:
                 self.__print(text)
                 i = self.__input()
                 try:
-                    parse_timestamp(i)
+                    parse_timestamp(f'{i} 00:00')
                 except ValueError:
                     text = 'Incorrect date format.\n'
                     self.__print(text)
@@ -353,7 +354,7 @@ class Session:
 
         str_time = ''
         while True:
-            text = 'Please type exact time in format HH:MM\n'
+            text = 'Please type exact time in format HH:MM or HH:MM:SS\n'
             self.__print(text)
             i = self.__input()
             try:
@@ -377,7 +378,7 @@ class Session:
                 self.__print(text)
                 i = self.__input(values=prompt)
                 if i == '2':
-                    text = 'Please type timezone in format +N or 0 or -N'
+                    text = 'Please type timezone in format +(-)H or +(-)HH or +(-)HHMM'
                     self.__print(text)
                     i = self.__input()
                     if i == '0':

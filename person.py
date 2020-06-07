@@ -1,7 +1,8 @@
-from pandas import Timedelta, datetime
+from datetime import timedelta, datetime
 from pickle import load, dump, HIGHEST_PROTOCOL
 from os import makedirs
 from os.path import isfile, join
+from random import randint
 
 import config
 from exceptions import assert_person
@@ -31,7 +32,7 @@ class Person:
                 self.quests = load(f)
 
     def start_work(self, quest_name, timestamp=None):
-        timestamp = timestamp or parse_timestamp(datetime.today())
+        timestamp = timestamp or parse_timestamp(str(datetime.today()))
         if isinstance(timestamp, str):
             timestamp = parse_timestamp(timestamp)
 
@@ -78,6 +79,7 @@ class Person:
         Структура квестов:
         quests = {
             'quest_name': {                     # [str] видимое имя квеста
+                'id': 000000000000              # [int] id квеста, использующееся в БД
                 'start_timestamp': None,        # [Timestamp] время начала выполнения (если квест сейчас выполняется)
                 'first_date': None,             # [date] дата окончания первого выполнения квеста (если был выполнен)
                 'last_date': None,              # [date] дата окончания последнего выполнения квеста (если был выполнен)
@@ -108,6 +110,7 @@ class Person:
 
         self.quests.update({
             quest_name: {
+                'id': randint(100000000000, 999999999999),
                 'start_timestamp': None,
                 'first_date': None,
                 'last_date': None,
@@ -128,7 +131,7 @@ class Person:
             if quest['first_date'] is not None:
                 for point_name in quest['points']:
                     point = quest['points'][point_name]
-                    point['points_to_do'] = (datetime.today().date() - quest['first_date'] + Timedelta('1 days')
+                    point['points_to_do'] = (datetime.today().date() - quest['first_date'] + timedelta(days=1)
                                              ).days * point['norm'] - point['total_points']
 
         # update recommended
@@ -168,7 +171,7 @@ class Person:
         # проверить, что указанное время старта равно или позже последнего лога по этому квесту
         logs_obj = Logs(self.logs_path)
         logs = logs_obj.get_logs(select=['timestamp'],
-                                 where=f'quest_name="{quest_name}" AND action="log_work"')
+                                 where=f'quest_id="{quest["id"]}" AND action="log_work"')
         if logs:
             last_log_timestamp = logs[-1][0]
             last_log_timestamp = parse_timestamp(last_log_timestamp)
@@ -180,7 +183,7 @@ class Person:
 
         logs_obj.log(
             timestamp=str(timestamp),
-            quest_name=quest_name,
+            quest_id=quest['id'],
             action='start_work',
             points={},
             bookmark='')
@@ -195,11 +198,11 @@ class Person:
         """
         assert_person(quest_name in self.quests,
                       f'quest named {quest_name} not found')
-        assert_person(self.quests[quest_name]['start_timestamp'] is not None,
-                      f'quest named {quest_name} is not started')
 
         quest = self.quests[quest_name]
 
+        assert_person(quest['start_timestamp'] is not None,
+                      f'quest named {quest_name} is not started')
         assert_person(quest['start_timestamp'] <= timestamp,
                       f'the given log timestamp ({timestamp})'
                       f' is after a start timestamp of the quest ({quest["start_timestamp"]})')
@@ -223,7 +226,7 @@ class Person:
         logs_obj = Logs(self.logs_path)
         logs_obj.log(
             timestamp=str(timestamp),
-            quest_name=quest_name,
+            quest_id=quest['id'],
             action='log_work',
             points=points,
             bookmark=bookmark)
@@ -256,7 +259,7 @@ if __name__ == '__main__':
     person.__update_quests()
 
     # начинаем выполнение квеста
-    person.__start_work(quest_name='hack_americans', timestamp=datetime.today() - Timedelta(15, 'm'))
+    person.__start_work(quest_name='hack_americans', timestamp=datetime.today() - timedelta(minutes=15))
 
     # заканчиваем выполнение квеста
     person.__log_work(
