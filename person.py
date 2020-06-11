@@ -133,24 +133,28 @@ class Person:
                     point = quest['points'][point_name]
                     point['points_to_do'] = (datetime.today().date() - quest['first_date'] + timedelta(days=1)
                                              ).days * point['norm'] - point['total_points']
-
-        # update recommended
-        for name in self.quests:
-            quest = self.quests[name]
-            if quest['first_date'] is None:
-                for point_name in quest['points']:
-                    point = quest['points'][point_name]
-                    point['recommended'] = point['norm']
             else:
                 for point_name in quest['points']:
                     point = quest['points'][point_name]
-                    if point['points_to_do'] >= 0:
-                        if quest['last_date'] == datetime.today().date():
-                            point['recommended'] = 0
-                        else:
-                            point['recommended'] = point['norm'] / 2
-                    else:
-                        point['recommended'] = -point['points_to_do']
+                    point['points_to_do'] = point['norm']
+
+        # update recommended
+        # for name in self.quests:
+        #     quest = self.quests[name]
+        #     if quest['first_date'] is None:
+        #         for point_name in quest['points']:
+        #             point = quest['points'][point_name]
+        #             point['recommended'] = point['norm']
+        #     else:
+        #         for point_name in quest['points']:
+        #             point = quest['points'][point_name]
+        #             if point['points_to_do'] >= 0:
+        #                 if quest['last_date'] == datetime.today().date():
+        #                     point['recommended'] = 0
+        #                 else:
+        #                     point['recommended'] = point['norm'] / 2
+        #             else:
+        #                 point['recommended'] = -point['points_to_do']
 
     def __edit_quest_meta(self, quest_name, instruction=None, color=None):
         assert_person(quest_name in self.quests,

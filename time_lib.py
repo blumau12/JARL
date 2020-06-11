@@ -4,6 +4,7 @@ from time import gmtime, strftime
 
 
 def parse_timestamp(timestamp):
+    timestamp = str(timestamp)
 
     # FORMAT '2021-05-01 10:30:00+03:00'
     if search(r'^\d\d\d\d-', timestamp) is not None:

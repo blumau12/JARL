@@ -1,6 +1,7 @@
 from person import Person
 from datetime import datetime
 from collections import OrderedDict
+from math import ceil
 
 import config
 from time_lib import parse_timestamp
@@ -171,16 +172,32 @@ class Session:
                 point = quest['points'][point_name]
                 typ = point['type']
                 if typ == 'int':
-                    while True:
-                        text = f'How much {point_name} did you earn?\n'
-                        self.__print(text)
-                        i = self.__input()
-                        try:
-                            i = int(i)
-                        except ValueError:
-                            self.__print(f'Please type exact number of {point_name}')
-                            continue
-                        break
+                    text = f'How much {point_name} did you earn?\n'
+                    prompt = OrderedDict((
+                        ('1', 'minutes from start to log'),
+                        ('2', f'custom number of {point_name}'),
+                    ))
+                    prompt.update({'x': 'exit'})
+                    text += self.__construct_prompt(prompt)
+                    self.__print(text)
+                    i = self.__input(values=prompt)
+                    if i == '1':
+                        timedelta = (timestamp or parse_timestamp(datetime.today()) - quest['start_timestamp'])
+                        i = timedelta.days * 60 * 24 + ceil(timedelta.seconds / 60)
+                    elif i == '2':
+                        while True:
+                            text = f'How much {point_name} did you earn?\n'
+                            self.__print(text)
+                            i = self.__input()
+                            try:
+                                i = int(i)
+                            except ValueError:
+                                self.__print(f'Please type exact number of {point_name}')
+                                continue
+                            break
+                    elif i == 'x':
+                        return
+
                 elif typ == 'bool':
                     text = f'Have you done {point_name}?\n'
                     prompt = OrderedDict((
@@ -218,8 +235,7 @@ class Session:
                         f'   points:\n'
                 for point_name in quest['points']:
                     point = quest['points'][point_name]
-                    text += f'      {point["recommended"]} {point_name} recommended\n' \
-                            f'      total {point["points_to_do"]} to do ({point["norm"]} per day)\n'
+                    text += f'      {point["points_to_do"]} {point_name} to do ({point["norm"]} per day)\n'
         else:
             text = 'No quests.\n'
         self.__print(text)
@@ -486,4 +502,4 @@ class Session:
 
 
 if __name__ == '__main__':
-    s = Session(name='karl', email='killer')
+    s = Session(name=config.NAME, email=config.EMAIL)
