@@ -182,7 +182,7 @@ class Session:
                     self.__print(text)
                     i = self.__input(values=prompt)
                     if i == '1':
-                        timedelta = (timestamp or parse_timestamp(datetime.today()) - quest['start_timestamp'])
+                        timedelta = ((timestamp or parse_timestamp(datetime.today())) - quest['start_timestamp'])
                         i = timedelta.days * 60 * 24 + ceil(timedelta.seconds / 60)
                     elif i == '2':
                         while True:
