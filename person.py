@@ -67,6 +67,11 @@ class Person:
         self.__update_quests()
         return self.quests
 
+    def show_logs(self, limit):
+        logs_obj = Logs(self.logs_path)
+        logs = logs_obj.get_logs(where=f'1 LIMIT {int(limit)}')
+        return logs
+
     # PRIVATE:
 
     def __save_progress(self):

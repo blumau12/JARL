@@ -61,9 +61,10 @@ class Session:
                 ('1', 'start work'),
                 ('2', 'log work'),
                 ('3', 'show quests'),
-                ('4', 'add quest'),
-                ('5', 'edit quest meta'),
-                ('6', 'remove quest'),
+                ('4', 'show logs'),
+                ('5', 'add quest'),
+                ('6', 'edit quest meta'),
+                ('7', 'remove quest'),
             ))
             prompt.update({'x': 'exit'})
             text += self.__construct_prompt(prompt)
@@ -77,10 +78,12 @@ class Session:
             elif i == '3':
                 self.__show_quests()
             elif i == '4':
-                self.__add_quest()
+                self.__show_logs()
             elif i == '5':
-                self.__edit_quest_meta()
+                self.__add_quest()
             elif i == '6':
+                self.__edit_quest_meta()
+            elif i == '7':
                 self.__remove_quest()
             elif i == 'x':
                 break
@@ -239,6 +242,17 @@ class Session:
         else:
             text = 'No quests.\n'
         self.__print(text)
+
+    def __show_logs(self):
+        logs = self.ps.show_logs(100)
+        self.__print(f'Show last 100 logs:\n'
+                     f'{"timestamp": <28}{"quest_name": <27}{"log": <16}{"points": <27}mark\n')
+        for timestamp, quest_id, log, points, mark in logs:
+            q_name = 'unknown'
+            for q_name, quest in self.ps.quests.items():
+                if quest['id'] == int(quest_id):
+                    break
+            self.__print(f'{timestamp: <28}{q_name: <27}{log: <16}{points: <27}{mark}\n')
 
     def __add_quest(self):
         while True:
