@@ -69,7 +69,7 @@ class Person:
 
     def show_logs(self, limit):
         logs_obj = Logs(self.logs_path)
-        logs = logs_obj.get_logs(where=f'1 LIMIT {int(limit)}')
+        logs = logs_obj.get_logs(where=f'1 ORDER BY timestamp LIMIT {int(limit)}')
         return logs
 
     # PRIVATE:
